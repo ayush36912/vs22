@@ -76,6 +76,7 @@ const Home = () => {
     [key: number]: { top: string; left: string; position: "fixed" | "static" };
   }>({});
   const [isCorrectSelected, setIsCorrectSelected] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   // Audio for success
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,12 +117,24 @@ const Home = () => {
   };
 
   useEffect(() => {
-    if (gameState === "SUCCESS" && videoRef.current) {
+    if (gameState === "SUCCESS") {
+      // Start a timer to show video after 6 seconds
+      const timer = setTimeout(() => {
+        setShowVideo(true);
+      }, 6000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState]);
+
+  useEffect(() => {
+    // Auto-play video when it shows up
+    if (showVideo && videoRef.current) {
       videoRef.current
         .play()
         .catch((e) => console.log("Autoplay prevented:", e));
     }
-  }, [gameState]);
+  }, [showVideo]);
 
   return (
     <div
@@ -273,24 +286,44 @@ const Home = () => {
             numberOfPieces={200}
           />
 
-          <div
-            className="position-absolute w-100 h-100 top-0 start-0"
-            style={{ zIndex: 0 }}
-          >
-            <video
-              ref={videoRef}
-              autoPlay
-              loop
-              muted
-              className="w-40 h-60"
-              style={{ objectFit: "cover" }}
+          {!showVideo && (
+            <div
+              className="card shadow-lg p-5 text-center rounded-4 bg-white bg-opacity-75 m-3"
+              style={{
+                maxWidth: "700px",
+                backdropFilter: "blur(5px)",
+                zIndex: 10,
+              }}
             >
-              <source src="temp.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
+              <h1 className="display-4 fw-bold text-danger mb-4">
+                Congratulations! 🎉
+              </h1>
+              <p className="lead fw-bold mb-0 fs-3">
+                “Congratulations! You survived Valentine’s questions… for now.{" "}
+                <br />
+                Lifetime subscription activated. <br />
+                No refunds!” 😂❤️
+              </p>
+            </div>
+          )}
 
-         
+          {showVideo && (
+            <div
+              className="position-absolute w-100 h-100 top-0 start-0"
+              style={{ zIndex: 0 }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                loop
+                muted
+                className="w-40 h-80 object-fit-cover"
+              >
+                <source src="temp.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          )}
         </div>
       )}
 
