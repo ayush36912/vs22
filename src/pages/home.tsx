@@ -1,170 +1,309 @@
-import { useState, CSSProperties, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Confetti from "react-confetti";
 
+// Question Data
+const questions = [
+  {
+    text: "If I’m angry and hungry at the same time… what should you do?",
+    options: ["Say sorry", "Order food", "Both immediately"],
+  },
+  {
+    text: "Who is more cute in this house?",
+    options: ["Me", "Me", "Obviously me"],
+  },
+  {
+    text: "If I say ‘I’m fine’… what does that mean?",
+    options: ["I’m fine", "I’m not fine", "You are in danger"],
+  },
+  {
+    text: "If I start a pillow fight at 2 AM, what do you do?",
+    options: ["Run away 🏃♂️", "Fight back 🥊", "Accept your fate and lose 😆"],
+  },
+  {
+    text: "Who controls the TV remote in this house?",
+    options: ["Me 🤷♀️", "Me 🙃", "Obviously me 😎"],
+  },
+  {
+    text: "If I say ‘Do whatever you want’… what does that mean?",
+    options: [
+      "I can really do anything 😳",
+      "Big mistake 😅",
+      "You are already in trouble 😏",
+    ],
+  },
+  {
+    text: "Why do you love me?",
+    options: [
+      "Because I’m beautiful 💃",
+      "Because I’m cute 🥺",
+      "Because I’m perfect and all of the above 😌",
+    ],
+  },
+  {
+    text: "If I leave clothes all over the floor… what do you do?",
+    options: [
+      "Pick them up 🙄",
+      "Ignore and survive 🫣",
+      "Pray for your life 😏",
+    ],
+  },
+  {
+    text: "If you had to choose again… would you marry me?",
+    options: [
+      "Yes ❤️",
+      "Of course yes 😍",
+      "I would marry you in every lifetime 💕",
+    ],
+  },
+  {
+    text: "Who is your Valentine?",
+    options: [
+      "My wife",
+      "Roshni",
+      "The most beautiful girl in world (which is me)",
+    ],
+  },
+];
+
 const Home = () => {
-  const [noBtnPosition, setNoBtnPosition] = useState({
-    top: "auto",
-    left: "auto",
-    position: "static",
-  });
-  const [yesSize, setYesSize] = useState(1);
-  const [isYesClicked, setIsYesClicked] = useState(false);
+  const [gameState, setGameState] = useState<"START" | "QUIZ" | "SUCCESS">(
+    "START",
+  );
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [ballPositions, setBallPositions] = useState<{
+    [key: number]: { top: string; left: string; position: "fixed" | "static" };
+  }>({});
+  const [isCorrectSelected, setIsCorrectSelected] = useState(false);
 
-  // Import the image (placeholder)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const familyImg = require("../assets/img/family_placeholder.svg").default;
+  // Audio for success
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const moveNoButton = () => {
-    const newTop = Math.random() * 80 + 10; // Random between 10% and 90%
-    const newLeft = Math.random() * 80 + 10;
-    setNoBtnPosition({
-      top: `${newTop}%`,
-      left: `${newLeft}%`,
-      position: "fixed",
-    });
+  const handleStart = () => {
+    setGameState("QUIZ");
   };
 
-  const handleYesClick = () => {
-    setIsYesClicked(true);
+  const handleWrongBallHover = (optionIndex: number) => {
+    // Generate random positions using 80% of viewport to stay somewhat central but chaotic
+    const randomTop = Math.floor(Math.random() * 80) + 10;
+    const randomLeft = Math.floor(Math.random() * 80) + 10;
+
+    setBallPositions((prev) => ({
+      ...prev,
+      [optionIndex]: {
+        top: `${randomTop}%`,
+        left: `${randomLeft}%`,
+        position: "fixed",
+      },
+    }));
   };
+
+  const handleCorrectOptionClick = () => {
+    setIsCorrectSelected(true); // Turn green instantly
+    setShowConfetti(true);
+    setTimeout(() => {
+      setIsCorrectSelected(false); // Reset for next question
+      setShowConfetti(false);
+      setBallPositions({}); // Reset positions
+
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else {
+        setGameState("SUCCESS");
+      }
+    }, 3000);
+  };
+
+  useEffect(() => {
+    if (gameState === "SUCCESS" && videoRef.current) {
+      videoRef.current
+        .play()
+        .catch((e) => console.log("Autoplay prevented:", e));
+    }
+  }, [gameState]);
 
   return (
     <div
-      className="vh-100 position-relative overflow-hidden"
+      className="vh-100 position-relative overflow-hidden d-flex flex-column justify-content-center align-items-center text-center p-3"
       style={{
-        backgroundImage: `url(${familyImg})`,
+        background:
+          "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
         backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Video Container */}
-      <div
-        className={`position-absolute w-100 h-100 d-flex justify-content-center align-items-center ${isYesClicked ? "visible" : "invisible"
-          }`}
-        style={{ zIndex: 0, transition: "visibility 0s 1s" }}
-      >
-        {isYesClicked && (
-          <>
-            <Confetti
-              width={window.innerWidth}
-              height={window.innerHeight}
-              recycle={true}
-              numberOfPieces={500}
-              gravity={0.3}
-            />
+      {showConfetti && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={500}
+        />
+      )}
+
+      {/* START SCREEN */}
+      {gameState === "START" && (
+        <div
+          className="card shadow-lg p-5 rounded-4 bg-white bg-opacity-75"
+          style={{ maxWidth: "600px", backdropFilter: "blur(10px)" }}
+        >
+          <h1 className="display-4 fw-bold text-danger mb-4">Warning! ⚠️</h1>
+          <p className="lead fw-bold mb-4 fs-3">
+            “Choose wisely. This is a lifetime decision my Marigold.” 😂❤️
+          </p>
+          <button
+            className="btn btn-danger btn-lg px-5 py-3 rounded-pill fw-bold shadow hover-scale"
+            onClick={handleStart}
+          >
+            Start Challenge 🚀
+          </button>
+        </div>
+      )}
+
+      {/* QUIZ SCREEN */}
+      {gameState === "QUIZ" && (
+        <div className="container position-relative h-100 d-flex flex-column justify-content-center align-items-center">
+          <div
+            className="card shadow-lg p-4 p-md-5 rounded-4 bg-white w-100 border-0"
+            style={{ maxWidth: "800px", minHeight: "500px" }}
+          >
+            <div className="mb-5 border-bottom pb-3">
+              <span className="text-muted fw-bold text-uppercase mb-2 d-block">
+                Question {currentQuestionIndex + 1} / {questions.length}
+              </span>
+              <h2 className="display-6 fw-bold text-dark lh-base">
+                {questions[currentQuestionIndex].text}
+              </h2>
+            </div>
+
+            <div className="d-flex flex-column gap-3 w-100 px-md-4">
+              {questions[currentQuestionIndex].options.map((option, index) => {
+                // Options 0 and 1 are "Wrong" (A and B)
+                // Option 2 is "Correct" (C)
+                const isCorrect = index === 2;
+                const labels = ["A", "B", "C"];
+                const ballLabel = labels[index];
+                const positionStyle = ballPositions[index] || {
+                  position: "static",
+                };
+
+                // Condition to show green: It is the correct option AND it has been selected
+                const showGreen = isCorrect && isCorrectSelected;
+
+                return (
+                  <div
+                    key={index}
+                    className="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all"
+                  >
+                    {/* The Ball Container */}
+                    <div
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        minWidth: "50px",
+                      }}
+                      className="d-flex align-items-center justify-content-center position-relative"
+                    >
+                      <button
+                        className="btn rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm text-white"
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          position: positionStyle.position,
+                          top: positionStyle.top,
+                          left: positionStyle.left,
+                          transition: isCorrect
+                            ? "transform 0.2s, background-color 0.2s"
+                            : "top 0.4s ease, left 0.4s ease, background-color 0.3s",
+                          zIndex: positionStyle.position === "fixed" ? 1000 : 1,
+                          // Change color to Green (#2ed573) if selected, else Red (#ff4757)
+                          backgroundColor: showGreen ? "#2ed573" : "#ff4757",
+                          border: "2px solid white",
+                          // Pulse if correct but NOT yet selected (hint mode)
+                          animation:
+                            isCorrect && !isCorrectSelected
+                              ? "pulse 1.5s infinite"
+                              : "none",
+                          boxShadow: showGreen
+                            ? "0 0 20px #2ed573" // Strong green glow on success
+                            : isCorrect
+                              ? "0 0 10px rgba(255, 71, 87, 0.4)"
+                              : "none",
+                        }}
+                        onMouseEnter={() =>
+                          !isCorrect && handleWrongBallHover(index)
+                        }
+                        onTouchStart={() =>
+                          !isCorrect && handleWrongBallHover(index)
+                        }
+                        onClick={
+                          isCorrect ? handleCorrectOptionClick : undefined
+                        }
+                        disabled={isCorrectSelected} // Disable clicks during success animation
+                      >
+                        {showGreen ? "✔" : ballLabel}
+                      </button>
+                    </div>
+
+                    {/* The Option Text (Fixed) */}
+                    <div
+                      className={`text-start flex-grow-1 p-3 border rounded-3 shadow-sm transition-all ${showGreen ? "bg-success-subtle border-success" : "bg-light"}`}
+                    >
+                      <span
+                        className={`fs-5 fw-medium ${showGreen ? "text-success" : "text-dark"}`}
+                      >
+                        {option}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS SCREEN */}
+      {gameState === "SUCCESS" && (
+        <div className="w-100 h-100 d-flex flex-column justify-content-center align-items-center position-relative">
+          <Confetti
+            width={window.innerWidth}
+            height={window.innerHeight}
+            recycle={true}
+            numberOfPieces={200}
+          />
+
+          <div
+            className="position-absolute w-100 h-100 top-0 start-0"
+            style={{ zIndex: 0 }}
+          >
             <video
+              ref={videoRef}
               autoPlay
               loop
               muted
-              className="w-100 h-100 object-fit-cover"
-              style={{
-                maxWidth: "80%",
-                maxHeight: "80%",
-                // objectFit: "cover",
-              }}
+              className="w-40 h-60"
+              style={{ objectFit: "cover" }}
             >
-              <source src="jetha.mp4" type="video/mp4" />
+              <source src="temp.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
-          </>
-        )}
-      </div>
-
-      {/* Left Curtain */}
-      <div
-        className="position-absolute h-100 bg-danger"
-        style={{
-          top: 0,
-          left: 0,
-          width: "50%",
-          background:
-            "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
-          transform: isYesClicked ? "translateX(-100%)" : "translateX(0)",
-          transition: "transform 1.5s ease-in-out",
-          zIndex: 10,
-        }}
-      />
-
-      {/* Right Curtain */}
-      <div
-        className="position-absolute h-100 bg-danger"
-        style={{
-          top: 0,
-          right: 0,
-          width: "50%",
-          background:
-            "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
-          transform: isYesClicked ? "translateX(100%)" : "translateX(0)",
-          transition: "transform 1.5s ease-in-out",
-          zIndex: 10,
-        }}
-      />
-
-      {/* Content Overlay */}
-      <div
-        className={`position-absolute top-50 start-50 translate-middle text-center w-100 ${isYesClicked ? "opacity-0" : "opacity-100"
-          }`}
-        style={{
-          zIndex: 20,
-          transition: "opacity 0.5s ease-out",
-          pointerEvents: isYesClicked ? "none" : "auto",
-        }}
-      >
-        <div
-          className="card shadow-lg p-5 d-inline-block rounded-3 bg-white bg-opacity-75"
-          style={{ maxWidth: "800px", backdropFilter: "blur(5px)" }}
-        >
-          <h1 className="display-4 text-danger fw-bold mb-5">
-            Will you be my Valentine Zeel ( Titli )?? 🌹
-          </h1>
-
-          <div
-            className="d-flex justify-content-center align-items-center gap-4 position-relative"
-            style={{ minHeight: "100px" }}
-          >
-            <button
-              className="btn btn-success fw-bold text-uppercase shadow"
-              style={{
-                fontSize: `${1.5 * yesSize}rem`,
-                padding: `${10 * yesSize}px ${20 * yesSize}px`,
-                transition: "all 0.3s ease",
-                transform: `scale(${yesSize})`,
-              }}
-              onClick={handleYesClick}
-              onMouseEnter={() => setYesSize((s) => (s < 1.5 ? s + 0.1 : s))}
-            >
-              Yes! 😍
-            </button>
-
-            <button
-              className="btn btn-outline-secondary rounded-circle shadow-sm d-flex align-items-center justify-content-center bg-white"
-              style={{
-                width: "80px",
-                height: "80px",
-                transition: "all 0.3s ease",
-                position: (noBtnPosition.position === "fixed"
-                  ? "fixed"
-                  : "relative") as any, // Cast to any to avoid strict type checks on position
-                top:
-                  noBtnPosition.position === "fixed"
-                    ? noBtnPosition.top
-                    : "auto",
-                left:
-                  noBtnPosition.position === "fixed"
-                    ? noBtnPosition.left
-                    : "auto",
-                zIndex: 30,
-              }}
-              onMouseEnter={moveNoButton}
-              onClick={moveNoButton}
-            >
-              No 😢
-            </button>
           </div>
+
+         
         </div>
-      </div>
+      )}
+
+      {/* Global CSS for Pulse Animation */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+          }
+        `}
+      </style>
     </div>
   );
 };
