@@ -1,0 +1,8 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>Layer 1</title>
+  <rect id="svg_1" height="600" width="800" y="0" x="0" stroke-width="0" stroke="#000" fill="#ffaaaa"/>
+  <text xml:space="preserve" text-anchor="middle" font-family="serif" font-size="24" id="svg_2" y="300" x="400" stroke-width="0" stroke="#000" fill="#000000">Family Photo Placeholder</text>
+  <text xml:space="preserve" text-anchor="middle" font-family="serif" font-size="20" id="svg_3" y="340" x="400" stroke-width="0" stroke="#000" fill="#000000">(Please replace with actual photo)</text>
+ </g>
+</svg>
