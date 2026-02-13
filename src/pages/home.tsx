@@ -67,9 +67,9 @@ const questions = [
 ];
 
 const Home = () => {
-  const [gameState, setGameState] = useState<"START" | "QUIZ" | "SUCCESS">(
-    "START",
-  );
+  const [gameState, setGameState] = useState<
+    "START" | "QUIZ" | "PROPOSAL" | "SUCCESS"
+  >("START");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [ballPositions, setBallPositions] = useState<{
@@ -77,6 +77,11 @@ const Home = () => {
   }>({});
   const [isCorrectSelected, setIsCorrectSelected] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [noBtnPosition, setNoBtnPosition] = useState<{
+    top: string;
+    left: string;
+    position: "fixed" | "static";
+  }>({ top: "auto", left: "auto", position: "static" });
 
   // Audio for success
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -111,9 +116,24 @@ const Home = () => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prev) => prev + 1);
       } else {
-        setGameState("SUCCESS");
+        setGameState("PROPOSAL"); // Move to Proposal instead of Success
       }
-    }, 3000);
+    }, 1500); // 1.5s delay
+  };
+
+  const handleProposalNoHover = () => {
+    const randomTop = Math.floor(Math.random() * 80) + 10;
+    const randomLeft = Math.floor(Math.random() * 80) + 10;
+    setNoBtnPosition({
+      top: `${randomTop}%`,
+      left: `${randomLeft}%`,
+      position: "fixed",
+    });
+  };
+
+  const handleProposalYesClick = () => {
+    setShowConfetti(true);
+    setGameState("SUCCESS");
   };
 
   useEffect(() => {
@@ -149,7 +169,7 @@ const Home = () => {
         <Confetti
           width={window.innerWidth}
           height={window.innerHeight}
-          recycle={false}
+          recycle={gameState === "SUCCESS"} // Recycle only on success
           numberOfPieces={500}
         />
       )}
@@ -191,8 +211,6 @@ const Home = () => {
 
             <div className="d-flex flex-column gap-3 w-100 px-md-4">
               {questions[currentQuestionIndex].options.map((option, index) => {
-                // Options 0 and 1 are "Wrong" (A and B)
-                // Option 2 is "Correct" (C)
                 const isCorrect = index === 2;
                 const labels = ["A", "B", "C"];
                 const ballLabel = labels[index];
@@ -200,7 +218,6 @@ const Home = () => {
                   position: "static",
                 };
 
-                // Condition to show green: It is the correct option AND it has been selected
                 const showGreen = isCorrect && isCorrectSelected;
 
                 return (
@@ -208,7 +225,6 @@ const Home = () => {
                     key={index}
                     className="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg-light transition-all"
                   >
-                    {/* The Ball Container */}
                     <div
                       style={{
                         width: "50px",
@@ -229,16 +245,14 @@ const Home = () => {
                             ? "transform 0.2s, background-color 0.2s"
                             : "top 0.4s ease, left 0.4s ease, background-color 0.3s",
                           zIndex: positionStyle.position === "fixed" ? 1000 : 1,
-                          // Change color to Green (#2ed573) if selected, else Red (#ff4757)
                           backgroundColor: showGreen ? "#2ed573" : "#ff4757",
                           border: "2px solid white",
-                          // Pulse if correct but NOT yet selected (hint mode)
                           animation:
                             isCorrect && !isCorrectSelected
                               ? "pulse 1.5s infinite"
                               : "none",
                           boxShadow: showGreen
-                            ? "0 0 20px #2ed573" // Strong green glow on success
+                            ? "0 0 20px #2ed573"
                             : isCorrect
                               ? "0 0 10px rgba(255, 71, 87, 0.4)"
                               : "none",
@@ -252,13 +266,12 @@ const Home = () => {
                         onClick={
                           isCorrect ? handleCorrectOptionClick : undefined
                         }
-                        disabled={isCorrectSelected} // Disable clicks during success animation
+                        disabled={isCorrectSelected}
                       >
                         {showGreen ? "✔" : ballLabel}
                       </button>
                     </div>
 
-                    {/* The Option Text (Fixed) */}
                     <div
                       className={`text-start flex-grow-1 p-3 border rounded-3 shadow-sm transition-all ${showGreen ? "bg-success-subtle border-success" : "bg-light"}`}
                     >
@@ -272,6 +285,43 @@ const Home = () => {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROPOSAL SCREEN */}
+      {gameState === "PROPOSAL" && (
+        <div
+          className="card shadow-lg p-5 rounded-4 bg-white bg-opacity-75 text-center d-flex flex-column justify-content-center align-items-center"
+          style={{ maxWidth: "700px", backdropFilter: "blur(10px)", minHeight: "300px" }}
+        >
+          <h1 className="display-4 fw-bold text-danger mb-5">
+            Will you be my Valentine? 🌹
+          </h1>
+          <div className="d-flex justify-content-center gap-5 w-100 position-relative" style={{ minHeight: "100px" }}>
+            <button
+              className="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow hover-scale"
+              style={{ fontSize: "1.5rem", minWidth: "150px" }}
+              onClick={handleProposalYesClick}
+            >
+              YES! 😍
+            </button>
+            <button
+              className="btn btn-outline-danger btn-lg px-5 py-3 rounded-pill fw-bold shadow-sm"
+              style={{
+                position: noBtnPosition.position as any,
+                top: noBtnPosition.top,
+                left: noBtnPosition.left,
+                fontSize: "1.5rem",
+                transition: "all 0.4s ease",
+                zIndex: 1000,
+                minWidth: "150px"
+              }}
+              onMouseEnter={handleProposalNoHover}
+              onTouchStart={handleProposalNoHover}
+            >
+              NO 😢
+            </button>
           </div>
         </div>
       )}
@@ -309,19 +359,22 @@ const Home = () => {
 
           {showVideo && (
             <div
-              className="position-absolute w-100 h-100 top-0 start-0"
+              className="position-absolute w-100 h-100 top-0 start-0 d-flex justify-content-center align-items-center"
               style={{ zIndex: 0 }}
             >
-              <video
-                ref={videoRef}
-                autoPlay
-                loop
-                muted
-                className="w-40 h-80 object-fit-cover"
-              >
-                <source src="temp.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              <div style={{ width: "90%", height: "90%", display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  loop
+                  muted
+                  className="object-fit-contain rounded-4 shadow-lg"
+                  style={{ maxWidth: "100%", maxHeight: "100%" }}
+                >
+                  <source src="temp.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             </div>
           )}
         </div>
